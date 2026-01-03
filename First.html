@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVARNA | Kinetic Gastronomy Prototype</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;900&family=Playfair+Display:ital,wght@1,600&display=swap');
+
+        :root {
+            --gold: #D4AF37;
+            --gold-low: rgba(212, 175, 55, 0.1);
+            --bg: #030303;
+            --text: #ffffff;
+            --ease-expo: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #canvas-stage {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000 100%);
+        }
+
+        #cursor-follower {
+            position: fixed;
+            width: 40px; height: 40px;
+            border: 1px solid var(--gold);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-mode: difference;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 25px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(3, 3, 3, 0.01);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .nav-logo {
+            font-family: 'Playfair Display';
+            font-size: 1.5rem;
+            color: var(--gold);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.6;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover { opacity: 1; color: var(--gold); }
+
+        /* --- HERO --- */
+        .hero { height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .hero-title {
+            font-size: clamp(4rem, 15vw, 18rem);
+            font-weight: 900;
+            color: var(--gold);
+            text-align: center;
+            line-height: 0.8;
+        }
+
+        /* --- 3D SCROLL SECTIONS --- */
+        .food-section { height: 300vh; position: relative; }
+        .sticky-wrapper {
+            position: sticky;
+            top: 0; height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            perspective: 2000px;
+        }
+
+        .food-content {
+            position: absolute;
+            left: 10%;
+            max-width: 400px;
+            z-index: 100;
+        }
+
+        .food-content h2 {
+            font-family: 'Playfair Display';
+            font-size: 5rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            line-height: 1;
+        }
+
+        .food-stage {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            transform-style: preserve-3d;
+        }
+
+        .food-part {
+            position: absolute;
+            width: 100%;
+            height: auto;
+            will-change: transform, filter, opacity;
+            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.8));
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            padding: 100px 50px;
+            background: #000;
+            border-top: 1px solid rgba(212, 175, 55, 0.1);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-logo {
+            font-size: 5vw;
+            color: var(--gold);
+            font-family: 'Playfair Display';
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 50px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .footer-col h4 {
+            color: var(--gold);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .footer-col p, .footer-col a {
+            color: var(--text);
+            opacity: 0.5;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* --- QR --- */
+        .qr-section { padding: 150px 0; background: #000; }
+        .glass-card {
+            position: relative;
+            width: 350px; height: 450px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transform-style: preserve-3d;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+        }
+
+        .scan-line {
+            position: absolute; width: 100%; height: 2px;
+            background: var(--gold); top: 0;
+            animation: proScan 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes proScan { 0%, 100% { top: 15%; opacity: 0; } 50% { top: 85%; opacity: 1; } }
+
+        .luxury-btn {
+            background: none; border: 1px solid var(--gold); color: var(--gold);
+            padding: 20px 60px; font-size: 0.9rem; letter-spacing: 5px;
+            text-transform: uppercase; margin-top: 50px; transition: 0.5s;
+        }
+
+        .luxury-btn:hover { background: var(--gold); color: black; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-logo">Svarna</div>
+        <div class="nav-links">
+            <a href="#">Concept</a>
+            <a href="#">The Cuisine</a>
+            <a href="#">Reservations</a>
+            <a href="#">Vault</a>
+        </div>
+    </nav>
+
+    <div id="cursor-follower"></div>
+    <canvas id="canvas-stage"></canvas>
+
+    <section class="hero">
+        <h1 class="hero-title" id="main-title">SVARNA</h1>
+    </section>
+
+    <section class="food-section">
+        <div class="sticky-wrapper">
+            <div class="food-content">
+                <h2>The Fire<br>Crust</h2>
+                <p>Witness the perfect fusion of San Marzano tomatoes and stone-fired alchemy.</p>
+            </div>
+            <div class="food-stage">
+                <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600" class="food-part base-layer" data-z="0" alt="Pizza Base">
+                <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?q=80&w=200" class="food-part topping" data-x="-400" data-y="-300" data-z="800" data-rot="45" alt="Basil">
+                <img src="https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=200" class="food-part topping" data-x="400" data-y="300" data-z="600" data-rot="-30" alt="Tomato">
+                <img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?q=80&w=200" class="food-part topping" data-x="0" data-y="-400" data-z="1000" data-rot="90" alt="Cheese">
+            </div>
+        </div>
+    </section>
+
+    <section class="food-section">
+        <div class="sticky-wrapper">
+            <div class="food-content">
+                <h2>The Grand<br>Stack</h2>
+                <p>Precisely engineered layers of smoked wagyu and artisanal brioche.</p>
+            </div>
+            <div class="food-stage">
+                <img src="https://images.unsplash.com/photo-1586816001966-79b736744398?q=80&w=600" class="food-part" data-z="800" data-y="-600" alt="Top Bun">
+                <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600" class="food-part" data-z="400" data-y="-200" alt="Lettuce">
+                <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?q=80&w=600" class="food-part" data-z="0" data-y="0" alt="Patty">
+                <img src="https://images.unsplash.com/photo-1586816001966-79b736744398?q=80&w=600" class="food-part" data-z="-400" data-y="400" alt="Bottom Bun">
+            </div>
+        </div>
+    </section>
+
+    <section class="qr-section">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <div class="glass-card" id="qr-glass">
+                <div class="scan-line"></div>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://svarna.com" style="width: 200px; filter: invert(1); opacity: 0.7;" alt="QR">
+                <p style="margin-top: 30px; letter-spacing: 4px; font-size: 0.7rem; color: var(--gold);">SECURE DIGITAL MENU</p>
+            </div>
+            <button class="luxury-btn">Enter The Vault</button>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-logo" id="magnetic-footer-logo">Svarna</div>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h4>Contact</h4>
+                <p>Mansion No. 9, Royal Enclave</p>
+                <p>+1 800 SVARNA</p>
+            </div>
+            <div class="footer-col">
+                <h4>Experience</h4>
+                <a href="#">The Tasting Room</a>
+                <a href="#">Chef's Table</a>
+                <a href="#">Private Vaults</a>
+            </div>
+            <div class="footer-col">
+                <h4>Newsletter</h4>
+                <p>Join the inner circle of gastronomy.</p>
+            </div>
+        </div>
+        <p style="margin-top: 60px; opacity: 0.2; font-size: 0.6rem; letter-spacing: 2px;">&copy; 2026 SVARNA ARTISANAL GROUP. ALL RIGHTS RESERVED.</p>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('canvas-stage');
+        const ctx = canvas.getContext('2d');
+        const follower = document.getElementById('cursor-follower');
+        const mainTitle = document.getElementById('main-title');
+        
+        let m = { x: 0, y: 0, tx: 0, ty: 0 };
+        let s = { current: 0, target: 0 };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        window.addEventListener('mousemove', e => {
+            m.tx = e.clientX; m.ty = e.clientY;
+        });
+
+        window.addEventListener('scroll', () => { s.target = window.scrollY; });
+
+        let blobs = Array.from({ length: 4 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 300 + 200,
+            vx: Math.random() * 2 - 1,
+            vy: Math.random() * 2 - 1
+        }));
+
+        function render() {
+            s.current += (s.target - s.current) * 0.08;
+            m.x += (m.tx - m.x) * 0.15;
+            m.y += (m.ty - m.y) * 0.15;
+            follower.style.transform = `translate(${m.x - 20}px, ${m.y - 20}px)`;
+
+            ctx.fillStyle = '#030303';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.filter = 'blur(100px)';
+            blobs.forEach(b => {
+                b.x += b.vx; b.y += b.vy;
+                if (b.x < 0 || b.x > canvas.width) b.vx *= -1;
+                if (b.y < 0 || b.y > canvas.height) b.vy *= -1;
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(212, 175, 55, 0.08)`; ctx.fill();
+            });
+
+            // Hero
+            const heroProg = Math.min(s.current / 600, 1);
+            mainTitle.style.transform = `scale(${1 + heroProg * 0.5}) translateY(${heroProg * 100}px)`;
+            mainTitle.style.opacity = 1 - heroProg;
+            mainTitle.style.filter = `blur(${heroProg * 20}px)`;
+
+            // 3D Assembly Engine
+            document.querySelectorAll('.food-section').forEach(sec => {
+                const rect = sec.getBoundingClientRect();
+                const wh = window.innerHeight;
+                if (rect.top < wh && rect.bottom > 0) {
+                    const prog = (wh - rect.top) / (wh + rect.height);
+                    const clampedProg = Math.max(0, Math.min(1, prog * 1.5));
+                    const parts = sec.querySelectorAll('.food-part');
+                    parts.forEach(p => {
+                        const x = (p.dataset.x || 0) * (1 - clampedProg);
+                        const y = (p.dataset.y || 0) * (1 - clampedProg);
+                        const z = (p.dataset.z || 0) * (1 - clampedProg);
+                        const rot = (p.dataset.rot || 0) * (1 - clampedProg);
+                        const blur = Math.abs(z) / 50;
+                        p.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateZ(${rot}deg) rotateX(${clampedProg * 20}deg)`;
+                        p.style.filter = `blur(${blur}px)`;
+                        p.style.opacity = clampedProg > 0.1 ? 1 : clampedProg * 10;
+                    });
+                }
+            });
+
+            // QR Tilt
+            const glass = document.getElementById('qr-glass');
+            const tiltX = (m.y - window.innerHeight/2) / 25;
+            const tiltY = (window.innerWidth/2 - m.x) / 25;
+            glass.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+
+            // Magnetic Footer Logo
+            const footerLogo = document.getElementById('magnetic-footer-logo');
+            const flRect = footerLogo.getBoundingClientRect();
+            const dist = Math.hypot(m.x - (flRect.left + flRect.width/2), m.y - (flRect.top + flRect.height/2));
+            if(dist < 200) {
+                const lx = (m.x - (flRect.left + flRect.width/2)) * 0.3;
+                const ly = (m.y - (flRect.top + flRect.height/2)) * 0.3;
+                footerLogo.style.transform = `translate(${lx}px, ${ly}px)`;
+            } else {
+                footerLogo.style.transform = `translate(0,0)`;
+            }
+
+            requestAnimationFrame(render);
+        }
+        render();
+    </script>
+</body>
+</html>
